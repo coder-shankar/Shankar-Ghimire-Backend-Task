@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Manager</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        h1, h2 {
+            color: #333;
+        }
+
+        #tasks {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        #tasks li {
+            padding: 8px;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .task-actions {
+            display: flex;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+<h1>Task Manager</h1>
+
+<div id="auth-section">
+    <h2>Register</h2>
+    <form id="register-form">
+        <label for="register-username">Username:</label>
+        <input type="text" id="register-username" required>
+        <br>
+        <label for="register-password">Password:</label>
+        <input type="password" id="register-password" required>
+        <br>
+        <button type="submit">Register</button>
+    </form>
+
+    <h2>Login</h2>
+    <form id="login-form">
+        <label for="login-username">Username:</label>
+        <input type="text" id="login-username" required>
+        <br>
+        <label for="login-password">Password:</label>
+        <input type="password" id="login-password" required>
+        <br>
+        <button type="submit">Login</button>
+    </form>
+</div>
+
+<div id="task-section" class="hidden">
+    <h2>Tasks</h2>
+    <ul id="tasks">
+        <!-- Tasks will be loaded here -->
+    </ul>
+    <form id="task-form">
+        <label for="task-title">New Task:</label>
+
+        <input type="text" id="task-title" required>
+
+        <label> Description: </label>
+        <input type="text" id="description" required>
+
+        <button type="submit">Add Task</button>
+    </form>
+</div>
+
+<script>
+    const BASE_URL = 'http://localhost:8080'; // Define the base URL of your API
+
+    const registerForm = document.getElementById('register-form');
+    const loginForm = document.getElementById('login-form');
+    const taskForm = document.getElementById('task-form');
+    const tasksList = document.getElementById('tasks');
+    const authSection = document.getElementById('auth-section');
+    const taskSection = document.getElementById('task-section');
+    let jwtToken = null;
+
+    registerForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const username = document.getElementById('register-username').value;
+        const password = document.getElementById('register-password').value;
+
+        const response = await fetch(`${BASE_URL}/api/auth/register`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({username, password})
+        });
+
+        if (response.ok) {
+            alert('Registration successful');
+            registerForm.reset();
+        } else {
+            alert('Registration failed');
+        }
+    });
+
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const username = document.getElementById('login-username').value;
+        const password = document.getElementById('login-password').value;
+
+        const response = await fetch(`${BASE_URL}/api/auth/login`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({username, password})
+        });
+
+        if (response.ok) {
+            const token = await response.text();
+            jwtToken = token;
+            authSection.classList.add('hidden');
+            taskSection.classList.remove('hidden');
+            loadTasks();
+        } else {
+            alert('Login failed');
+        }
+    });
+
+    taskForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const title = document.getElementById('task-title').value;
+        const description = document.getElementById('description').value;
+
+        const response = await fetch(`${BASE_URL}/api/tasks`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${jwtToken}`
+            },
+            body: JSON.stringify({title: title, description: description})
+        });
+
+        if (response.ok) {
+            loadTasks();
+            taskForm.reset();
+        } else {
+            alert('Failed to add task');
+        }
+    });
+
+    async function loadTasks() {
+        const response = await fetch(`${BASE_URL}/api/tasks`, {
+            headers: {'Authorization': `Bearer ${jwtToken}`}
+        });
+
+        if (response.ok) {
+            const tasks = await response.json();
+            tasksList.innerHTML = '';
+            tasks.forEach(task => {
+                const li = document.createElement('li');
+                li.textContent = task.title;
+
+                const desc = document.createElement('div');
+                desc.textContent = task.description;
+                li.appendChild(desc);
+
+                const date = document.createElement('span');
+                date.textContent = task.createdAt;
+                li.appendChild(date);
+
+                const taskActions = document.createElement('div');
+                taskActions.classList.add('task-actions');
+
+                const updateButton = document.createElement('button');
+                updateButton.textContent = 'Update';
+                updateButton.addEventListener('click', () => updateTask(task.id));
+
+                const deleteButton = document.createElement('button');
+                deleteButton.textContent = 'Delete';
+                deleteButton.addEventListener('click', () => deleteTask(task.id));
+
+                taskActions.appendChild(updateButton);
+                taskActions.appendChild(deleteButton);
+                li.appendChild(taskActions);
+
+                tasksList.appendChild(li);
+            });
+        } else {
+            alert('Failed to load tasks');
+        }
+    }
+
+    async function updateTask(id) {
+        const newTitle = prompt('Enter new task title:');
+        if (newTitle) {
+            const response = await fetch(`${BASE_URL}/api/tasks/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${jwtToken}`
+                },
+                body: JSON.stringify({title: newTitle})
+            });
+
+            if (response.ok) {
+                loadTasks();
+            } else {
+                alert('Failed to update task');
+            }
+        }
+    }
+
+    async function deleteTask(id) {
+        const response = await fetch(`${BASE_URL}/api/tasks/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${jwtToken}`
+            }
+        });
+
+        if (response.ok) {
+            loadTasks();
+        } else {
+            alert('Failed to delete task');
+        }
+    }
+</script>
+</body>
+</html>
