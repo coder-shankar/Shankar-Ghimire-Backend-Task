@@ -3,8 +3,8 @@ services:
   db:
     image: postgres:latest
     environment:
-      POSTGRES_DB: taskmanagment
-      POSTGRES_USER: postgres
+      POSTGRES_DB: task
+      POSTGRES_USER: admin
       POSTGRES_PASSWORD: pass
     ports:
       - "5432:5432"
@@ -16,8 +16,8 @@ services:
     depends_on:
       - db
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/taskmanagment
-      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/task
+      SPRING_DATASOURCE_USERNAME: admin
       SPRING_DATASOURCE_PASSWORD: pass
 
   ui:
