@@ -1,4 +1,4 @@
-package com.example.task_management;
+package com.example.task_management.task;
 
 import lombok.Data;
 
