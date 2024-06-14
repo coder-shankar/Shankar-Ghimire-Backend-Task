@@ -9,7 +9,6 @@ public class TaskDto {
     private LocalDateTime createdAt;
     private String title;
     private String description;
-    private boolean completed;
 
     //response only
     private Long id;

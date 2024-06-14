@@ -4,6 +4,7 @@ package com.example.task_management;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -24,7 +25,11 @@ public class TaskService {
                              .orElseThrow(() -> new RuntimeException("Task not found"));
     }
 
-    public TaskDto createTask(Task task) {
+    public TaskDto createTask(TaskDto taskDetails) {
+        Task task = new Task();
+        task.setTitle(taskDetails.getTitle());
+        task.setDescription(taskDetails.getDescription());
+        task.setCreatedAt(LocalDateTime.now());
         Task save = taskRepository.save(task);
         return toTaskDto(save);
     }
@@ -33,7 +38,6 @@ public class TaskService {
         Task task = taskRepository.findById(id).orElseThrow(() -> new RuntimeException("Task not found"));
         task.setTitle(taskDetails.getTitle());
         task.setDescription(taskDetails.getDescription());
-        task.setCompleted(taskDetails.isCompleted());
         Task updated = taskRepository.save(task);
         return toTaskDto(updated);
     }
